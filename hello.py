@@ -1,10 +1,47 @@
-from flask import Flask
+from flask import Flask, render_template
+import os
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = "keep it secret, keep it safe"
+app.config['SQLALCHEMY_DATABASE_URI'] =\
+    'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy()
+db.init_app(app)
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    users = db.relationship('User', backref='role')
+
+    def __repr__(self):
+        return f"<Role {self.name}>"
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
+
+    def __repr__(self):
+        return f"<User {self.username}>"
+
+
+
 @app.route('/')
 def index():
-    return "Hello Web World"
+    return render_template('index.html')
 
 @app.route('/about')
 def about_us():
@@ -22,7 +59,7 @@ def links():
 
 @app.route('/user/<username>')
 def user(username):
-    return f"Hello, {username}"
+    return render_template('user.html',username=username)
 
 @app.route('/user/<name>/<age>')
 def two_variable(name,age):
@@ -31,3 +68,7 @@ def two_variable(name,age):
 @app.route('/squared/<int:num>')
 def number(num):
     return str(num**2)
+
+@app.route('/derived')
+def derived():
+    return render_template('derived.html')
